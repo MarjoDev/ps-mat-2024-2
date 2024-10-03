@@ -34,15 +34,16 @@ export default function CarForm() {
     imported: false,
     plates: '',
     selling_date: null,
-    selling_price: '',
+    customer_id: ''
   }
 
   const [state, setState] = React.useState({
     car: { ...formDefaults },
     formModified: false,
+    customers: [],
     inputErrors: {},
   })
-  const { car, formModified, inputErrors } = state
+  const { car, customers, formModified, inputErrors } = state
 
   const params = useParams()
   const navigate = useNavigate()
@@ -99,6 +100,8 @@ export default function CarForm() {
       // Invoca a validação dos dados da biblioteca Zod
       // por meio do model Car === '' ? '' : parseFloat(value)
 
+      if(car.selling_price === '') car.selling_price = null
+
       Car.parse(car)
       console.log(car)
 
@@ -116,7 +119,7 @@ export default function CarForm() {
         navigate('..', { relative: 'path', replace: true })
       })
     } catch (error) {
-      // console.error(error)
+      console.error(error)
       if (error instanceof ZodError) {
         // Formamos um objeto contendo os erros do Zod e
         // o colocamos na variável de estado inputErrors
@@ -138,19 +141,35 @@ export default function CarForm() {
     a função loadData() para buscar no back-end os dados do cliente a ser editado
   */
   React.useEffect(() => {
-    if (params.id) loadData()
+    loadData()
   }, [])
 
   async function loadData() {
     showWaiting(true)
     try {
-      const result = await myfetch.get(`/cars/${params.id}`)
 
-      // Converte o formato de data armazenado no banco de dados
-      // para o formato reconhecido pelo componente DatePicker
-      result.birth_date = parseISO(result.birth_date)
+      let car = { ...formDefaults }, customers = []
 
-      setState({ ...state, customer: result })
+      // Busca a lista de clientes para preencher o combo de escolha
+      // do cliente que comprou o carro
+      customers = await myfetch.get('/customers')
+
+      // Se houver parâmetro na rota, precisamos buscar o carro para
+      // ser editado
+      if(params.id) {
+
+        car = await myfetch.get(`/cars/${params.id}`)
+
+        // Converte o formato de data armazenado no banco de dados
+        // para o formato reconhecido pelo componente DatePicker
+        
+        if(car.selling_date) {
+          car.selling_date = parseISO(car.selling_date)
+        }
+      }
+
+      setState({ ...state, car, customers })
+
     } catch (error) {
       console.error(error)
       notify(error.message, 'error')
@@ -245,19 +264,21 @@ export default function CarForm() {
             ))}
           </TextField>
 
-          <FormControlLabel
-            control={
-              <Checkbox
-                name='imported'
-                variant='filled'
-                value={(car.imported = imported)}
-                checked={imported}
-                onChange={handleImportedChange}
-                color='primary'
-              />
-            }
-            label='Importado'
-          />
+          <div class="MuiFormControl-root">
+            <FormControlLabel
+              control={
+                <Checkbox
+                  name='imported'
+                  variant='filled'
+                  value={(car.imported = imported)}
+                  checked={imported}
+                  onChange={handleImportedChange}
+                  color='primary'
+                />
+              }
+              label='Importado'
+            />
+          </div>
 
           <InputMask
             mask='AAA-9$99'
@@ -307,13 +328,31 @@ export default function CarForm() {
             label='Preço de venda'
             variant='filled'
             type='number'
-            required
             fullWidth
             value={car.selling_price}
             onChange={handleFieldChange}
             helperText={inputErrors?.selling_price}
             error={inputErrors?.selling_price}
           />
+
+          <TextField
+            name='customer_id'
+            label='Cliente'
+            variant='filled'
+            required
+            fullWidth
+            value={car.customer_id}
+            onChange={handleFieldChange}
+            select
+            helperText={inputErrors?.customer_id}
+            error={inputErrors?.customer_id}
+          >
+            {customers.map((c) => (
+              <MenuItem key={c.id} value={c.id}>
+                {c.name}
+              </MenuItem>
+            ))}
+          </TextField>
 
           <Box
             sx={{
@@ -330,9 +369,9 @@ export default function CarForm() {
             </Button>
           </Box>
 
-          {/* <Box sx={{ fontFamily: 'monospace', display: 'flex', width: '100%' }}>
-            {JSON.stringify(inputErrors)}
-          </Box> */}
+          {/*<Box sx={{ fontFamily: 'monospace', display: 'flex', width: '100%' }}>
+            {JSON.stringify(car)}
+          </Box>*/}
         </form>
       </Box>
     </>
