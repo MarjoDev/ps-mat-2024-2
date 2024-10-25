@@ -37,9 +37,7 @@ controller.retrieveAll = async function(req, res) {
         { id: 'asc' }
       ],
       include: {
-        customer: includedRels.includes('customer'),
-        created_user: includedRels.includes('created_user'),
-        updated_user: includedRels.includes('updated_user')
+        customer: includedRels.includes('customer')
       }
     })
 
@@ -62,9 +60,7 @@ controller.retrieveOne = async function(req, res) {
     const result = await prisma.car.findUnique({
       where: { id: Number(req.params.id) },
       include: {
-        customer: includedRels.includes('customer'),
-        created_user: includedRels.includes('created_user'),
-        updated_user: includedRels.includes('updated_user')
+        customer: includedRels.includes('customer')
       }
     })
 
