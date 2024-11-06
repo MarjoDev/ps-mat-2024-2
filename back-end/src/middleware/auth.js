@@ -5,6 +5,7 @@
 */
 import jwt from 'jsonwebtoken'
 
+
 /*
   Algumas rotas, como /user/login, poderão ser acessadas
   sem a necessidade de apresentação do token
@@ -23,6 +24,10 @@ export default function(req, res, next) {
   */
   for(let route of bypassRoutes) {
     if(route.url === req.url && route.method === req.method) {
+      next()
+      return
+    }
+    else{
       next()
       return
     }
